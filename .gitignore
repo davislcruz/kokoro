@@ -169,3 +169,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Kokoro-specific: Model files and voices (downloaded at runtime)
+kokoro/models/
+kokoro/voices/
+
+# Test audio files
+test_*.wav
+*.wav

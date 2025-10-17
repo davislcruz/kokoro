@@ -115,7 +115,7 @@ class CustomSTFT(nn.Module):
         # Convolution to get real part => shape (B, freq_bins, frames)
         real_out = F.conv1d(
             x,
-            self.weight_forward_real,
+            self.weight_forward_real,  # type: ignore[arg-type]
             bias=None,
             stride=self.hop_length,
             padding=0,
@@ -123,7 +123,7 @@ class CustomSTFT(nn.Module):
         # Imag part
         imag_out = F.conv1d(
             x,
-            self.weight_forward_imag,
+            self.weight_forward_imag,  # type: ignore[arg-type]
             bias=None,
             stride=self.hop_length,
             padding=0,
@@ -159,14 +159,14 @@ class CustomSTFT(nn.Module):
         # then add them => (B, 1, time).
         real_rec = F.conv_transpose1d(
             real_part,
-            self.weight_backward_real,  # shape (freq_bins, 1, filter_length)
+            self.weight_backward_real,  # type: ignore[arg-type]
             bias=None,
             stride=self.hop_length,
             padding=0,
         )
         imag_rec = F.conv_transpose1d(
             imag_part,
-            self.weight_backward_imag,
+            self.weight_backward_imag,  # type: ignore[arg-type]
             bias=None,
             stride=self.hop_length,
             padding=0,

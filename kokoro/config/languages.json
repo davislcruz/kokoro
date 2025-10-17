@@ -1,0 +1,25 @@
+{
+  "aliases": {
+    "en-us": "a",
+    "en-gb": "b",
+    "es": "e",
+    "fr-fr": "f",
+    "hi": "h",
+    "it": "i",
+    "pt-br": "p",
+    "ja": "j",
+    "zh": "z"
+  },
+  "lang_codes": {
+    "a": "American English",
+    "b": "British English",
+    "e": "es",
+    "f": "fr-fr",
+    "h": "hi",
+    "i": "it",
+    "p": "pt-br",
+    "j": "Japanese",
+    "z": "Mandarin Chinese"
+  },
+  "supported_languages": ["a", "b", "h", "e", "f", "i", "p", "j", "z"]
+}

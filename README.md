@@ -127,3 +127,47 @@ dependencies:
 - 🪽 Kokoro is a Japanese word that translates to "heart" or "spirit". Kokoro is also a [character in the Terminator franchise](https://terminator.fandom.com/wiki/Kokoro) along with [Misaki](https://github.com/hexgrad/misaki?tab=readme-ov-file#acknowledgements).
 
 <img src="https://static0.gamerantimages.com/wordpress/wp-content/uploads/2024/08/terminator-zero-41-1.jpg" width="400" alt="kokoro" />
+
+---
+
+## Project Structure (Refactored)
+
+The project has been refactored with a clean, modular structure:
+
+```
+kokoro/
+├── __main__.py                 # CLI entry point
+├── config/                     # Configuration management
+│   ├── defaults.py/json        # Application defaults
+│   └── languages.py/json       # Language mappings
+├── models/                     # Model files (downloaded)
+├── voices/                     # Voice files (downloaded)
+├── pipeline.py                 # Audio generation pipeline
+├── model.py                    # Model loading
+├── voice_manager.py            # Voice handling
+├── text_processor.py           # Text processing
+└── language_processors.py     # Language-specific processing
+```
+
+### Key Improvements
+
+- **Modular CLI**: Focused functions with single responsibilities
+- **Configuration Management**: Centralized JSON-based configuration
+- **Better Error Handling**: Proper validation with descriptive messages
+- **Enhanced Documentation**: Clear function docstrings and comments
+
+### CPU-Only Installation
+
+For CPU-only inference (no CUDA/GPU):
+
+```bash
+# Using pip with CPU-only PyTorch
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+pip install kokoro soundfile
+```
+
+Or use the provided installation script:
+
+```bash
+bash install-cpu.sh
+```

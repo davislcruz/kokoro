@@ -1,0 +1,229 @@
+"""Kokoro TTS CLI
+Example usage:
+python3 -m kokoro --text "The sky above the port was the color of television, tuned to a dead channel." -o file.wav --debug
+
+echo "Bom dia mundo, como vão vocês" > text.txt
+python3 -m kokoro -i text.txt -l p --voice pm_alex > audio.wav
+
+Common issues:
+pip not installed: `uv pip install pip`
+(Temporary workaround while https://github.com/explosion/spaCy/issues/13747 is not fixed)
+
+espeak not installed: `apt-get install espeak-ng`
+"""
+
+import argparse
+import subprocess
+import time
+import wave
+from pathlib import Path
+from typing import Generator, TYPE_CHECKING
+
+import numpy as np
+from loguru import logger
+from .constants import SAMPLE_RATE, DEFAULT_VOICE
+
+languages = [
+    "a",  # American English
+    "b",  # British English
+    "h",  # Hindi
+    "e",  # Spanish
+    "f",  # French
+    "i",  # Italian
+    "p",  # Brazilian Portuguese
+    "j",  # Japanese
+    "z",  # Mandarin Chinese
+]
+
+if TYPE_CHECKING:
+    from kokoro import KPipeline
+
+
+def generate_audio(
+    text: str, kokoro_language: str, voice: str, speed=1, device=None
+) -> Generator["KPipeline.Result", None, None]:
+    from kokoro import KPipeline
+
+    if not voice.startswith(kokoro_language):
+        logger.warning(f"Voice {voice} is not made for language {kokoro_language}")
+    pipeline = KPipeline(lang_code=kokoro_language, device=device)
+    yield from pipeline(text, voice=voice, speed=speed, split_pattern=r"\n+")
+
+
+def generate_and_save_audio(
+    output_file: Path, text: str, kokoro_language: str, voice: str, speed=1, device=None
+) -> dict:
+    """Generate and save audio with performance metrics."""
+    synthesis_start = time.perf_counter()
+    total_samples = 0
+    chunk_count = 0
+
+    with wave.open(str(output_file.resolve()), "wb") as wav_file:
+        wav_file.setnchannels(1)  # Mono audio
+        wav_file.setsampwidth(2)  # 2 bytes per sample (16-bit audio)
+        wav_file.setframerate(SAMPLE_RATE)  # Sample rate
+
+        for result in generate_audio(
+            text, kokoro_language=kokoro_language, voice=voice, speed=speed, device=device
+        ):
+            logger.debug(result.phonemes)
+            if result.audio is None:
+                continue
+            audio_bytes = (result.audio.numpy() * 32767).astype(np.int16).tobytes()
+            wav_file.writeframes(audio_bytes)
+            total_samples += result.audio.shape[0]
+            chunk_count += 1
+
+    synthesis_time = time.perf_counter() - synthesis_start
+
+    # Calculate performance metrics
+    audio_duration = total_samples / SAMPLE_RATE
+    rtf = synthesis_time / audio_duration if audio_duration > 0 else float('inf')
+
+    return {
+        'synthesis_time': synthesis_time,
+        'audio_duration': audio_duration,
+        'rtf': rtf,
+        'total_samples': total_samples,
+        'chunk_count': chunk_count,
+        'text_length': len(text)
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-m",
+        "--voice",
+        default=DEFAULT_VOICE,
+        help="Voice to use",
+    )
+    parser.add_argument(
+        "-l",
+        "--language",
+        help="Language to use (defaults to the one corresponding to the voice)",
+        choices=languages,
+    )
+    parser.add_argument(
+        "-o",
+        "--output-file",
+        "--output_file",
+        type=Path,
+        help="Path to output WAV file",
+        required=True,
+    )
+    parser.add_argument(
+        "-i",
+        "--input-file",
+        "--input_file",
+        type=Path,
+        help="Path to input text file (default: stdin)",
+    )
+    parser.add_argument(
+        "-t",
+        "--text",
+        help="Text to use instead of reading from stdin",
+    )
+    parser.add_argument(
+        "-s",
+        "--speed",
+        type=float,
+        default=1.0,
+        help="Speech speed",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print DEBUG messages to console",
+    )
+    parser.add_argument(
+        "--speak",
+        action="store_true",
+        help="Play the generated audio file after creation",
+    )
+    parser.add_argument(
+        "--metrics",
+        action="store_true",
+        help="Show detailed performance metrics",
+    )
+    parser.add_argument(
+        "--device",
+        choices=["cpu", "cuda", "mps"],
+        help="Device to use for inference (default: auto-detect, use 'cpu' for Intel i3)",
+    )
+    args = parser.parse_args()
+    if args.debug:
+        logger.level("DEBUG")
+    logger.debug(args)
+
+    lang = args.language or args.voice[0]
+
+    if args.text is not None and args.input_file is not None:
+        raise Exception("You cannot specify both 'text' and 'input_file'")
+    elif args.text:
+        text = args.text
+    elif args.input_file:
+        file: Path = args.input_file
+        text = file.read_text()
+    else:
+        import sys
+        print("Press Ctrl+D to stop reading input and start generating", flush=True)
+        text = '\n'.join(sys.stdin)
+
+    logger.debug(f"Input text: {text!r}")
+
+    out_file: Path = args.output_file
+    if not out_file.suffix == ".wav":
+        logger.warning("The output file name should end with .wav")
+
+    metrics = generate_and_save_audio(
+        output_file=out_file,
+        text=text,
+        kokoro_language=lang,
+        voice=args.voice,
+        speed=args.speed,
+        device=args.device,
+    )
+
+    # Display performance metrics
+    if metrics['rtf'] < 1.0:
+        performance = "✅ Faster than real-time"
+    elif metrics['rtf'] == 1.0:
+        performance = "⚖️  Real-time"
+    else:
+        performance = "❌ Slower than real-time"
+
+    if args.metrics:
+        # Detailed metrics
+        print("\n" + "="*50)
+        print("PERFORMANCE METRICS")
+        print("="*50)
+        print(f"Text length:      {metrics['text_length']:,} characters")
+        print(f"Chunks generated: {metrics['chunk_count']}")
+        print(f"Synthesis time:   {metrics['synthesis_time']:.2f} s")
+        print(f"Audio duration:   {metrics['audio_duration']:.2f} s")
+        print(f"Total samples:    {metrics['total_samples']:,}")
+        print(f"RTF:              {metrics['rtf']:.4f}")
+        print(f"Performance:      {performance}")
+        print("="*50)
+    else:
+        # Brief summary
+        print(f"\n{performance}")
+        print(f"Generated {metrics['audio_duration']:.2f}s audio in {metrics['synthesis_time']:.2f}s (RTF: {metrics['rtf']:.3f})")
+
+    # Play the audio if --speak flag is used
+    if args.speak:
+        try:
+            logger.info(f"Playing audio file: {out_file}")
+            subprocess.run(["paplay", str(out_file)], check=True)
+            logger.info("Audio playback completed successfully!")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Could not play audio: {e}")
+            logger.error("Please check your audio system.")
+        except FileNotFoundError:
+            logger.error("paplay not found. Please install PulseAudio or play the file manually.")
+            logger.error("You can try: aplay, mpv, or vlc to play the file.")
+
+
+if __name__ == "__main__":
+    main()

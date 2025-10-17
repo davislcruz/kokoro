@@ -1,0 +1,18 @@
+{
+  "audio": {
+    "sample_rate": 24000,
+    "magic_divisor": 80,
+    "max_phoneme_length": 510
+  },
+  "processing": {
+    "default_chunk_size": 400
+  },
+  "models": {
+    "default_voice": "af_heart",
+    "default_repo_id": "hexgrad/Kokoro-82M"
+  },
+  "cli": {
+    "supported_devices": ["cpu", "cuda", "mps"],
+    "default_speed": 1.0
+  }
+}
