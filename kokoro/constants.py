@@ -50,3 +50,6 @@ DEFAULT_VOICE = "af_heart"
 
 # Default repository
 DEFAULT_REPO_ID = 'hexgrad/Kokoro-82M'
+
+# Default output directory for generated audio files
+DEFAULT_OUTPUT_DIR = "output"

@@ -23,3 +23,4 @@ DEFAULT_REPO_ID = _defaults['models']['default_repo_id']
 # CLI constants
 SUPPORTED_DEVICES = _defaults['cli']['supported_devices']
 DEFAULT_SPEED = _defaults['cli']['default_speed']
+DEFAULT_OUTPUT_DIR = _defaults['cli']['default_output_dir']

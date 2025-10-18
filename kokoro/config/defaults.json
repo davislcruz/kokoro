@@ -13,6 +13,7 @@
   },
   "cli": {
     "supported_devices": ["cpu", "cuda", "mps"],
-    "default_speed": 1.0
+    "default_speed": 1.0,
+    "default_output_dir": "output"
   }
 }

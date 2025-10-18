@@ -22,7 +22,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("-l", "--language", help="Language to use (defaults to the one corresponding to the voice)", choices=SUPPORTED_LANGUAGES)
 
     # Input / Output
-    parser.add_argument("-o", "--output-file", "--output_file", type=Path, required=True, help="Path to output WAV file")
+    parser.add_argument("-o", "--output-file", "--output_file", type=Path, help="Path to output WAV file (default: output/audio_TIMESTAMP.wav)")
     parser.add_argument("-i", "--input-file", "--input_file", type=Path, help="Path to input text file (default: stdin)")
     parser.add_argument("-t", "--text", help="Text to use instead of reading from stdin")
 

@@ -23,4 +23,5 @@ __all__ = [
     'DEFAULT_CHUNK_SIZE',
     'SUPPORTED_DEVICES',
     'DEFAULT_SPEED',
+    'DEFAULT_OUTPUT_DIR',
 ]
